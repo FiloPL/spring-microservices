@@ -16,27 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CurrencyExchangeController {
+    private Logger logger = LoggerFactory.getLogger(CurrencyExchangeController.class);
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    @Autowired
+    private CurrencyExchangeRepository repository;
 
     @Autowired
     private Environment environment;
 
-    @Autowired
-    private ExchangeValueRepository repository;
-
     @GetMapping("/currency-exchange/from/{from}/to/{to}")
-    public ExchangeValue retrieveExchangeValue
-            (@PathVariable String from, @PathVariable String to){
+    public CurrencyExchange retrieveExchangeValue(
+            @PathVariable String from,
+            @PathVariable String to) {
 
-        ExchangeValue exchangeValue =
-                repository.findByFromAndTo(from, to);
+        logger.info("retrieveExchangeValue called with {} to {}", from, to);
 
-        exchangeValue.setPort(
-                Integer.parseInt(environment.getProperty("local.server.port")));
+        CurrencyExchange currencyExchange
+                = repository.findByFromAndTo(from, to);
 
-        logger.info("{}", exchangeValue);
+        if(currencyExchange ==null) {
+            throw new RuntimeException
+                    ("Unable to Find data for " + from + " to " + to);
+        }
 
-        return exchangeValue;
+        String port = environment.getProperty("local.server.port");
+        currencyExchange.setEnvironment(port);
+        return currencyExchange;
     }
 }
